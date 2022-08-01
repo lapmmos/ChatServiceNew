@@ -64,15 +64,23 @@ object ChatService {
 
     //Получает список сообщений
     fun getMessages (chat: Chat, userId: Int) : MutableList<Message> {
-        val unreadedMessages = chat.messages.toList().filter { it.autorId != userId }
-        for (message in unreadedMessages) chat.messages[chat.messages.indexOf(message)] = message.copy(readed = true)
-        return chat.messages
+        //val unreadedMessages = chat.messages.toList().filter { it.autorId != userId }
+        val unreadedMessages = chat.messages.asSequence().filter{ it.autorId != userId }.map { c ->
+            c.apply { chat.messages[chat.messages.indexOf(c)] = c.copy(readed = true) }}
+            .toMutableList()
+        //for (message in unreadedMessages) chat.messages[chat.messages.indexOf(message)] = message.copy(readed = true)
+        //return chat.messages
+        return unreadedMessages
+
     }
 
     //Получает список непрочитанных чатов
     fun getUnreadChats (userId: Int) : MutableList<Chat> {
-        val result = chats.filter { chat: Chat -> chat.companionId == userId && chat.messages.any{ it.autorId != userId && it.readed == false}}.toMutableList()
-        result.addAll(chats.filter { chat: Chat -> chat.autorId == userId && chat.messages.any{it.autorId != userId && it.readed == false}})
+        //val result = chats.filter { chat: Chat -> chat.companionId == userId && chat.messages.any{ it.autorId != userId && it.readed == false}}.toMutableList()
+        //result.addAll(chats.filter { chat: Chat -> chat.autorId == userId && chat.messages.any{it.autorId != userId && it.readed == false}})
+        val result = chats.asSequence().filter{ chat: Chat -> chat.companionId == userId && chat.messages.any{ it.autorId != userId && it.readed == false}}.toMutableList()
+        result.addAll(chats.asSequence().filter { chat: Chat -> chat.autorId == userId && chat.messages.any{it.autorId != userId && it.readed == false}})
+
         return result
     }
 
@@ -86,10 +94,15 @@ object ChatService {
 
         val messageInList = getMessageById(chat, messageId)
         val dateFilter: Int = (messageInList?.date ?: 0)
-        val unreadedMessages = chat.messages.filter{ it.autorId != userId && it.date >= dateFilter}
-        val result = unreadedMessages.take(count)
-        for (message in result) chat.messages[chat.messages.indexOf(message)] = message.copy(readed = true)
-        return result.toMutableList()
+
+        val result = chat.messages.asSequence().filter{ it.autorId != userId && it.date >= dateFilter}.take(count).map { c ->
+            c.apply { chat.messages[chat.messages.indexOf(c)] = c.copy(readed = true) }}
+            .toMutableList()
+        //val unreadedMessages = chat.messages.filter{ it.autorId != userId && it.date >= dateFilter}
+        //val result = unreadedMessages.take(count)
+        //for (message in result) chat.messages[chat.messages.indexOf(message)] = message.copy(readed = true)
+        //return result.toMutableList()
+        return result
 
     }
 
